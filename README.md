@@ -75,7 +75,7 @@ Plus `agents/` (architect, tx-engineer, safety-reviewer), `commands/` (`/simulat
 ## Installation
 
 ```bash
-git clone https://github.com/GreYat-Labs/agent-ops-skill
+git clone https://github.com/G-ojies/agent-ops-skill
 cd agent-ops-skill
 ./install.sh          # interactive, installs to ~/.claude/skills/agent-ops
 ./install.sh -y       # non-interactive, all defaults
@@ -167,4 +167,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-Built by [GreYat Labs](https://github.com/GreYat-Labs) for the [Solana AI Kit](https://github.com/solanabr/solana-ai-kit) skill bounty.
+Built by [GreYat Labs](https://github.com/G-ojies) for the [Solana AI Kit](https://github.com/solanabr/solana-ai-kit) skill bounty.
