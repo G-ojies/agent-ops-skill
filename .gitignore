@@ -1,0 +1,25 @@
+# Secrets — never commit
+.env
+.env.*
+*.key
+*-keypair.json
+id.json
+wallet.json
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build / logs
+dist/
+build/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
