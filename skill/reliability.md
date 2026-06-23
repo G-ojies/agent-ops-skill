@@ -66,7 +66,7 @@ Jitter matters: without it, every retry from every worker fires at the same inst
 | Commitment | Latency | Reorg risk | Use for |
 |------------|---------|-----------|---------|
 | `processed` | lowest | can be rolled back | UI hints only — never decisions |
-| `confirmed` | ~1–2s | very low | the default for *acting* |
+| `confirmed` | sub-second to ~1s | very low | the default for *acting* |
 | `finalized` | slowest | effectively zero | accounting, payouts, anything money-final ([payouts.md](payouts.md)) |
 
 The trap: reading at `processed`, deciding on it, and acting — then the read gets rolled back and your action was based on state that never happened. **Decide on `confirmed`; verify money on `finalized`.**

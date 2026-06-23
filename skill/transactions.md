@@ -34,7 +34,8 @@ let txMessage = pipe(
 Simulation is free and catches the failure before it costs a fee or, worse, half-executes. An unattended agent must never send an action it hasn't simulated.
 
 ```ts
-import { compileTransaction, getBase64EncodedWireTransaction, signTransactionMessageWithSigners } from '@solana/kit';
+import { getBase64EncodedWireTransaction, signTransactionMessageWithSigners } from '@solana/kit';
+// signTransactionMessageWithSigners is async and compiles internally — no separate compile step.
 
 const signed = await signTransactionMessageWithSigners(txMessage);
 const wire = getBase64EncodedWireTransaction(signed);
@@ -49,7 +50,7 @@ if (sim.value.err) {
   // Do NOT send. Log sim.value.logs, classify the error, and stop or adapt.
   throw new SimulationFailed(sim.value.err, sim.value.logs);
 }
-const unitsConsumed = sim.value.unitsConsumed;  // drives the CU limit below
+const unitsConsumed = sim.value.unitsConsumed;  // bigint | undefined — drives the CU limit below
 ```
 
 Read the result properly: `err` means it will fail on-chain — never send it. `logs` tell you *why*. `unitsConsumed` is what you use to set the compute-unit limit precisely instead of guessing.
@@ -62,7 +63,8 @@ Priority fees are how a transaction competes for block space. Hardcoding them ei
 import { getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
 
 // Limit: measured units + a margin, so you don't overpay for headroom you don't use.
-const cuLimit = Math.ceil(Number(unitsConsumed) * 1.1);
+// unitsConsumed is optional — fall back to a safe default if simulation didn't report it.
+const cuLimit = Math.ceil(Number(unitsConsumed ?? 200_000n) * 1.1);
 
 // Price: sample recent fees for the accounts this tx writes to, pick a percentile.
 const recent = await rpc.getRecentPrioritizationFees(writableAccounts).send();
@@ -105,7 +107,7 @@ If you need manual control (custom rebroadcast pacing, your own retry budget), t
 ```ts
 const sig = getSignatureFromTransaction(signed);     // known before the first send
 while (true) {
-  await rpc.sendTransaction(wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0 }).send();
+  await rpc.sendTransaction(wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send();  // maxRetries is a bigint in kit
   await sleep(2000);
 
   const { value } = await rpc.getSignatureStatuses([sig]).send();
@@ -119,13 +121,13 @@ while (true) {
 }
 ```
 
-`skipPreflight: true` here is deliberate and safe **only because you already simulated in step 2** — re-running preflight on every rebroadcast wastes RPC and time. `maxRetries: 0` hands rebroadcast control to your loop.
+`skipPreflight: true` here is deliberate and safe **only because you already simulated in step 2** — re-running preflight on every rebroadcast wastes RPC and time. `maxRetries: 0n` hands rebroadcast control to your loop.
 
 ## 5. The cardinal retry rule
 
 > **Rebroadcast the same signed transaction. Never re-sign on retry.**
 
-The transaction signature is computed from the message, which includes the blockhash. As long as you resend the *same bytes*, the network deduplicates it — sending it ten times can land at most once. The moment you build a *new* transaction (new blockhash, new instructions) to "retry," you've created a second action that can also land. That is the classic autonomous-agent double-spend. Retries live at the *network* layer (rebroadcast same bytes); a genuinely new attempt only happens **after** the old one is provably dead (expired), and it must go through the same idempotency journal ([architecture.md](architecture.md)).
+The transaction signature is computed from the message, which includes the blockhash. As long as you resend the *same bytes*, the network deduplicates it — validators keep a status cache keyed on the transaction's message hash and reject a repeat as `AlreadyProcessed`, so sending it ten times can land at most once (and once the blockhash expires it fails `BlockhashNotFound` and can never re-land). The moment you build a *new* transaction (new blockhash, new instructions) to "retry," you've created a second action that can also land. That is the classic autonomous-agent double-spend. Retries live at the *network* layer (rebroadcast same bytes); a genuinely new attempt only happens **after** the old one is provably dead (expired), and it must go through the same idempotency journal ([architecture.md](architecture.md)).
 
 ## 6. Durable nonces — for long-lived or offline signing
 
@@ -135,6 +137,8 @@ When an action can't be built and landed inside the ~60–90s blockhash window (
 import { setTransactionMessageLifetimeUsingDurableNonce } from '@solana/kit';
 // First instruction MUST be the nonce advance; the tx stays valid until that nonce is consumed.
 ```
+
+Confirm durable-nonce transactions with `sendAndConfirmDurableNonceTransactionFactory` — a blockhash-lifetime tx and a nonce-lifetime tx are different types, so the regular `sendAndConfirmTransactionFactory` won't accept a nonce tx.
 
 Key discipline: the nonce advances exactly once per successful use, so durable-nonce transactions are naturally single-use — but you must still journal intent, because a signed-but-unsent nonce tx is a live liability until the nonce moves.
 
