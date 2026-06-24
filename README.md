@@ -1,12 +1,12 @@
 # Solana Agent Ops Skill
 
-A Claude Code / Codex skill for **building and operating autonomous agents on Solana** — agents that observe, decide, and sign transactions with no human watching each action.
+A Claude Code / Codex skill for **building and operating autonomous agents on Solana** - agents that observe, decide, and sign transactions with no human watching each action.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Stack: 2026](https://img.shields.io/badge/stack-2026-blue)
 ![SDK: @solana/kit](https://img.shields.io/badge/SDK-%40solana%2Fkit-blueviolet)
 
-> **Extends**: [solana-dev-skill](https://github.com/solana-foundation/solana-dev-skill) — core Solana development (programs, frontend, testing, security)
+> **Extends**: [solana-dev-skill](https://github.com/solana-foundation/solana-dev-skill) - core Solana development (programs, frontend, testing, security)
 
 ## Why this skill
 
